@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pathly — Find your gap. Build your path.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+  :root{
+    --cream-0:#fbfaef; --cream-1:#f5f4e9; --cream-2:#efeee3; --cream-3:#e9e9de; --cream-4:#e4e3d8;
+    --ink:#1b1c16; --text:#4c444c; --muted:#7e747c;
+    --purple:#422446; --purple-2:#5a3a5e;
+    --berry:#944363; --berry-bg:rgba(254,155,190,0.35);
+    --green:#003728; --green-2:#0d4f3c; --green-bg:rgba(178,240,214,0.35);
+    --radius-lg:12px; --radius-md:8px; --radius-sm:4px;
+    --shadow-sm:0 1px 1px rgba(0,0,0,0.05);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%; overflow:hidden; position:fixed; inset:0; width:100%; overscroll-behavior:none;}
+  body{font-family:'Inter',sans-serif; color:var(--ink); background:var(--cream-0);}
+  h1,h2,h3,.brand{font-family:'Manrope',sans-serif;}
+
+  #app{position:fixed; inset:0; height:100dvh; width:100%; overflow:hidden;}
+
+  .topbar{position:fixed; top:0; left:0; right:0; height:60px; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:var(--cream-1); box-shadow:var(--shadow-sm); box-sizing:border-box;}
+  .brand{display:flex; align-items:center; gap:8px; font-weight:700; font-size:18px; color:var(--purple);}
+  .brand-badge{width:30px; height:30px; display:flex; align-items:center; justify-content:center;}
+  .brand-badge img{width:100%; height:100%; object-fit:contain;}
+  .logo-hero{width:64px; height:auto; margin:0 auto 10px;}
+  .progress-track{flex:1; max-width:320px; height:6px; background:var(--cream-4); border-radius:99px; margin:0 20px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--purple); border-radius:99px; transition:width .35s ease;}
+  .step-count{font-size:12px; color:var(--muted); font-weight:600; white-space:nowrap;}
+
+  .screens{position:absolute; inset:0; top:60px; bottom:76px;}
+  .screen{position:absolute; inset:0; padding:36px 20px 28px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:16px; overflow-y:auto; overscroll-behavior:contain; transform:translateX(40px); opacity:0; pointer-events:none; transition:transform .35s ease, opacity .3s ease;}
+  .screen.active{transform:translateX(0); opacity:1; pointer-events:auto;}
+  .screen-inner{width:100%; max-width:460px; margin:auto;}
+
+  .eyebrow{font-size:11px; letter-spacing:0.08em; color:var(--berry); font-weight:600; text-transform:uppercase; margin-bottom:6px;}
+  h1.title{font-size:28px; line-height:1.2; color:var(--purple); font-weight:800; margin-bottom:8px;}
+  h2.subtitle{font-size:20px; color:var(--purple); font-weight:700; margin-bottom:6px;}
+  h3.block-title{font-size:14px; color:var(--purple); font-weight:700; margin:14px 0 8px;}
+  p.lead{font-size:15px; color:var(--text); line-height:1.5; margin-bottom:18px;}
+
+  .card{background:#fff; border-radius:var(--radius-lg); padding:18px; box-shadow:var(--shadow-sm); width:100%;}
+  .option-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; width:100%;}
+  .option{background:var(--cream-1); border:2px solid transparent; border-radius:var(--radius-md); padding:14px; text-align:left; cursor:pointer; font:inherit; color:var(--ink); font-weight:600; font-size:14px; transition:border-color .2s, background .2s;}
+  .option.selected{border-color:var(--purple); background:#fff;}
+  .option small{display:block; font-weight:400; color:var(--muted); margin-top:3px; font-size:12px;}
+
+  label{display:block; font-size:13px; font-weight:600; color:var(--text); margin:12px 0 6px;}
+  input[type=text], input[type=email], input[type=tel], input[type=password], select{width:100%; padding:12px 14px; border-radius:var(--radius-md); border:1px solid var(--cream-4); background:var(--cream-1); font-size:14px; font-family:inherit; color:var(--ink);}
+  input:focus, select:focus{outline:2px solid var(--purple); outline-offset:1px;}
+
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:12px 20px; border-radius:var(--radius-md); font-weight:600; font-size:14px; border:none; cursor:pointer; font-family:inherit; transition:opacity .2s, transform .15s;}
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--purple); color:#fff;}
+  .btn-secondary{background:var(--cream-2); color:var(--purple);}
+  .btn-berry{background:var(--berry); color:#fff;}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:0.45; cursor:not-allowed;}
+  .btn-sm{padding:7px 12px; font-size:12px;}
+
+  .status-msg{font-size:13px; margin-top:10px; text-align:center; min-height:16px;}
+  .status-msg.ok{color:var(--green-2);}
+  .status-msg.err{color:var(--berry);}
+
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px; width:100%;}
+  .chip{padding:6px 12px; border-radius:99px; font-size:13px; font-weight:600;}
+  .chip.have{background:var(--green-bg); color:var(--green);}
+  .chip.gap{background:var(--berry-bg); color:var(--berry);}
+
+  .skill-row{display:flex; align-items:center; justify-content:space-between; background:var(--cream-1); border-radius:var(--radius-md); padding:10px 12px; width:100%; margin-bottom:8px;}
+  .skill-row .tag{font-size:11px; font-weight:700; padding:3px 8px; border-radius:var(--radius-sm); flex-shrink:0; margin-left:8px;}
+  .tag.mastered{background:var(--green-bg); color:var(--green);}
+  .tag.critical{background:var(--berry-bg); color:var(--berry);}
+
+  .gauge-bar{height:10px; background:var(--cream-4); border-radius:99px; overflow:hidden; width:100%; margin:8px 0;}
+  .gauge-fill{height:100%; background:var(--purple); border-radius:99px; transition:width .4s ease;}
+
+  .roadmap-item{display:flex; gap:12px; width:100%; padding:12px 0; border-bottom:1px solid var(--cream-3); align-items:flex-start;}
+  .roadmap-item:last-child{border-bottom:none;}
+  .roadmap-dot{width:28px; height:28px; border-radius:50%; background:var(--purple-2); color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;}
+  .roadmap-item h4{font-size:14px; font-weight:700; color:var(--ink);}
+  .roadmap-item p{font-size:12px; color:var(--muted); margin-top:2px;}
+  .roadmap-tags{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;}
+  .roadmap-tags a{font-size:11px; background:var(--cream-2); color:var(--purple); padding:3px 9px; border-radius:99px; text-decoration:none; font-weight:600;}
+  .roadmap-tags a:hover{background:var(--cream-3);}
+
+  .carousel{display:flex; gap:12px; overflow-x:auto; width:100%; padding-bottom:8px; scroll-snap-type:x mandatory;}
+  .course-card{min-width:210px; background:#fff; border-radius:var(--radius-lg); padding:14px; box-shadow:var(--shadow-sm); scroll-snap-align:start; display:flex; flex-direction:column; gap:8px;}
+  .course-card h4{font-size:14px;}
+  .course-card p{font-size:12px; color:var(--muted);}
+  .course-card .links{display:flex; flex-wrap:wrap; gap:6px;}
+  .course-card .links a{font-size:11px; background:var(--cream-1); color:var(--purple); padding:4px 8px; border-radius:99px; text-decoration:none; font-weight:600;}
+  .course-card .links a:hover{background:var(--cream-2);}
+
+  .ring-wrap{position:relative; width:120px; height:120px; margin:0 auto;}
+  .ring-label{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .ring-label b{font-size:24px; color:var(--purple);}
+  .ring-label span{font-size:11px; color:var(--muted);}
+
+  .footer-nav{position:fixed; bottom:0; left:0; right:0; height:76px; z-index:20; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:0 20px; background:var(--cream-0); box-shadow:0 -1px 4px rgba(0,0,0,0.05); box-sizing:border-box;}
+
+  .chat-fab{position:fixed; bottom:96px; right:18px; z-index:40; width:52px; height:52px; border-radius:50%; background:var(--berry); color:#fff; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer; box-shadow:0 4px 10px rgba(0,0,0,0.2); font-size:22px;}
+  .chat-panel{position:fixed; right:16px; bottom:156px; z-index:41; width:min(320px, calc(100vw - 32px)); height:min(420px, 60vh); background:#fff; border-radius:var(--radius-lg); box-shadow:0 10px 30px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden; transform:translateY(12px) scale(0.98); opacity:0; pointer-events:none; transition:all .2s ease;}
+  .chat-panel.open{transform:translateY(0) scale(1); opacity:1; pointer-events:auto;}
+  .chat-head{background:var(--purple); color:#fff; padding:12px 14px; font-weight:700; font-size:14px; display:flex; justify-content:space-between; align-items:center;}
+  .chat-head button{background:none; border:none; color:#fff; font-size:16px; cursor:pointer;}
+  .chat-body{flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; font-size:13px;}
+  .msg{max-width:85%; padding:8px 11px; border-radius:10px; line-height:1.4;}
+  .msg.bot{background:var(--cream-1); align-self:flex-start; white-space:pre-line;}
+  .msg.user{background:var(--purple); color:#fff; align-self:flex-end;}
+  .chat-input-row{display:flex; border-top:1px solid var(--cream-3);}
+  .chat-input-row input{flex:1; border:none; padding:10px 12px; font-size:13px; font-family:inherit;}
+  .chat-input-row button{border:none; background:var(--purple); color:#fff; padding:0 16px; cursor:pointer; font-weight:600;}
+
+  .cat-tabs{display:flex; gap:8px; width:100%; margin-bottom:10px;}
+  .cat-tab{flex:1; padding:9px; border-radius:var(--radius-md); border:none; background:var(--cream-2); color:var(--purple); font-weight:600; font-size:13px; cursor:pointer;}
+  .cat-tab.active{background:var(--purple); color:#fff;}
+  .role-list{display:flex; flex-direction:column; gap:8px; width:100%; max-height:260px; overflow-y:auto;}
+  .role-item{background:var(--cream-1); border:2px solid transparent; border-radius:var(--radius-md); padding:12px 14px; text-align:left; cursor:pointer; font:inherit; font-weight:600; font-size:14px; color:var(--ink);}
+  .role-item.selected{border-color:var(--purple); background:#fff;}
+  .role-item small{display:block; font-weight:400; color:var(--muted); margin-top:2px; font-size:11px;}
+
+  .insight-list{list-style:none; display:flex; flex-direction:column; gap:8px; width:100%;}
+  .insight-list li{font-size:13px; line-height:1.4; padding-left:20px; position:relative;}
+  .insight-list.good li:before{content:"✓"; position:absolute; left:0; color:var(--green-2); font-weight:700;}
+  .insight-list.focus li:before{content:"→"; position:absolute; left:0; color:var(--berry); font-weight:700;}
+  .insight-list.tips li:before{content:"•"; position:absolute; left:0; color:var(--muted); font-weight:700;}
+
+  @media (min-width:600px){ .screen-inner{max-width:480px;} }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand"><span class="brand-badge"><img src="data:image/png;base64,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" alt="Pathly logo"></span> Pathly</div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="step-count" id="stepCount">Step 1 / 10</div>
+  </div>
+
+  <div class="screens" id="screens">
+
+    <!-- 0: LANDING -->
+    <section class="screen active" data-step="0">
+      <div class="screen-inner" style="text-align:center;">
+        <img class="logo-hero" src="data:image/png;base64,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" alt="Pathly logo">
+        <div class="eyebrow">Career Intelligence Engine</div>
+        <h1 class="title">Find your gap.<br>Build your path.</h1>
+        <p class="lead">Pathly analyzes your current skills against your target career and generates a personalized, verified roadmap to bridge critical gaps.</p>
+        <button class="btn btn-primary btn-block" onclick="goTo(1)">Start Free Career Audit</button>
+        <p style="font-size:13px; color:var(--muted); margin-top:14px;">Already have an account? <a href="#" style="color:var(--berry); font-weight:600; text-decoration:none;" onclick="goTo(1)">Log in</a></p>
+      </div>
+    </section>
+
+    <!-- 1: PROFILE (Google/LinkedIn removed - email/password only) -->
+    <section class="screen" data-step="1">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 1 · User Profile</div>
+        <h2 class="subtitle">Create your account</h2>
+        <p class="lead">Basic info only — you can add more later.</p>
+        <label for="pName">Full name</label>
+        <input type="text" id="pName" placeholder="Jordan Lee" required>
+        <label for="pEmail">Email</label>
+        <input type="email" id="pEmail" placeholder="you@example.com" required>
+        <label for="pPhone">Phone</label>
+        <input type="tel" id="pPhone" placeholder="+91 98765 43210" required>
+        <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="submitProfile()" id="profileSubmitBtn">Create Account &amp; Continue</button>
+        <p class="status-msg" id="profileStatus"></p>
+      </div>
+    </section>
+
+    <!-- 2: CAREER GOAL SELECTION (80 roles, 3 categories) -->
+    <section class="screen" data-step="2">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 2 · Career Goal</div>
+        <h2 class="subtitle">What role are you aiming for?</h2>
+        <p class="lead">Pick your target — this is what we'll compare your skills against.</p>
+        <input type="text" id="roleSearch" placeholder="Search any role…" oninput="renderRoleList()" style="margin-bottom:10px;">
+        <div class="cat-tabs" id="catTabs"></div>
+        <div class="role-list" id="roleList"></div>
+        <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="confirmRole()" id="roleNextBtn" disabled>Next</button>
+        <p class="status-msg" id="roleStatus"></p>
+      </div>
+    </section>
+
+    <!-- 3: RESUME UPLOAD & AI ANALYSIS -->
+    <section class="screen" data-step="3">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 3 · Skill Extraction</div>
+        <h2 class="subtitle">Upload your resume</h2>
+        <p class="lead">We read the actual text of your PDF/DOCX and match it against a skills dictionary for your target role.</p>
+        <div class="card" style="text-align:center; border:2px dashed var(--cream-4);" id="resumeUploadCard">
+          <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt" style="width:100%;" onchange="onResumeFileChosen(this)">
+          <p style="font-size:12px; color:var(--muted); margin-top:8px;" id="resumeFileHint">PDF, DOCX or TXT, up to 5MB</p>
+        </div>
+        <div id="manualSkillsWrap" style="display:none; width:100%;">
+          <label for="manualSkills">List your skills (comma separated)</label>
+          <input type="text" id="manualSkills" placeholder="e.g. Python, SQL, Figma">
+        </div>
+        <button class="btn btn-secondary btn-block" style="margin-top:10px;" onclick="toggleManualSkills()" id="manualToggleBtn">Or enter skills manually instead</button>
+        <button class="btn btn-primary btn-block" style="margin-top:12px;" onclick="runResumeAnalysis()" id="analyzeBtn">Analyze My Skills</button>
+        <p class="status-msg" id="analyzeStatus"></p>
+        <div class="chip-row" id="extractedChips" style="margin-top:10px;"></div>
+      </div>
+    </section>
+
+    <!-- 4: RESUME INSIGHTS (NEW) -->
+    <section class="screen" data-step="4">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 4 · Resume Insights</div>
+        <h2 class="subtitle">How your resume stacks up</h2>
+        <div class="card">
+          <h3 class="block-title">What you're doing well</h3>
+          <ul class="insight-list good" id="insightGood"></ul>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3 class="block-title">Areas to strengthen</h3>
+          <ul class="insight-list focus" id="insightFocus"></ul>
+        </div>
+        <div class="card" style="margin-top:12px;">
+          <h3 class="block-title">General resume tips</h3>
+          <ul class="insight-list tips" id="insightTips"></ul>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="goTo(5)">Continue to Skill Assessment</button>
+      </div>
+    </section>
+
+    <!-- 5: SKILL ASSESSMENT -->
+    <section class="screen" data-step="5">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 5 · Skill Assessment</div>
+        <h2 class="subtitle">Quick validation</h2>
+        <p class="lead">Rate your confidence on a skill we're unsure about from your resume, so the gap analysis isn't just guessing.</p>
+        <div class="card" id="quizCard">
+          <p style="font-weight:600; margin-bottom:10px;" id="quizQuestion">Pick a target role and analyze your resume first.</p>
+          <div class="option-grid" id="quizOptions"></div>
+        </div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="goTo(6)">Continue to Gap Analysis</button>
+        <button class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="goTo(6)">Skip assessment</button>
+      </div>
+    </section>
+
+    <!-- 6: SKILL GAP ANALYSIS -->
+    <section class="screen" data-step="6">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 6 · Core Engine</div>
+        <h2 class="subtitle">Your skill gap analysis</h2>
+        <div class="card">
+          <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--muted); font-weight:600;"><span>ROLE MATCH — <span id="gapRoleName">no role selected</span></span><span style="color:var(--purple); font-size:16px; font-family:Manrope;" id="gapPercent">0%</span></div>
+          <div class="gauge-bar"><div class="gauge-fill" id="gapGauge" style="width:0%;"></div></div>
+          <div id="gapList"></div>
+        </div>
+        <button class="btn btn-berry btn-block" style="margin-top:14px;" onclick="goTo(7)">View My Roadmap</button>
+      </div>
+    </section>
+
+    <!-- 7: PERSONALIZED ROADMAP -->
+    <section class="screen" data-step="7">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 7 · Core Output</div>
+        <h2 class="subtitle">Your personalized roadmap</h2>
+        <div class="card" id="roadmapList"></div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="goTo(8)">See Course &amp; Project Picks</button>
+      </div>
+    </section>
+
+    <!-- 8: COURSE & PROJECT PICKS -->
+    <section class="screen" data-step="8">
+      <div class="screen-inner">
+        <div class="eyebrow">Step 8 · Fills Each Roadmap Step</div>
+        <h2 class="subtitle">Course &amp; project picks</h2>
+        <p class="lead" style="margin-bottom:8px;">Real search links generated per missing skill — tap to browse, then add it to your plan.</p>
+        <div class="carousel" id="courseCarousel"></div>
+        <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="goTo(9)">Go to Dashboard</button>
+      </div>
+    </section>
+
+    <!-- 9: PROGRESS DASHBOARD -->
+    <section class="screen" data-step="9">
+      <div class="screen-inner" style="text-align:center;">
+        <div class="eyebrow">Step 9 · Tracks Completion</div>
+        <h2 class="subtitle">Progress dashboard</h2>
+        <div class="ring-wrap">
+          <svg viewBox="0 0 120 120" width="120" height="120">
+            <circle cx="60" cy="60" r="52" stroke="#e4e3d8" stroke-width="12" fill="none"/>
+            <circle id="ringProgress" cx="60" cy="60" r="52" stroke="#422446" stroke-width="12" fill="none" stroke-dasharray="326.7" stroke-dashoffset="326.7" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+          </svg>
+          <div class="ring-label"><b id="ringPercent">0%</b><span>COMPLETE</span></div>
+        </div>
+        <div class="card" style="text-align:left; margin-top:16px;" id="planList"></div>
+        <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="rerunGapAnalysis()">Re-analyze Gaps</button>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="footer-nav">
+    <button class="btn btn-secondary" id="backBtn" onclick="goBack()">← Back</button>
+  </div>
+
+  <button class="chat-fab" id="chatFab" onclick="toggleChat()">💬</button>
+  <div class="chat-panel" id="chatPanel">
+    <div class="chat-head"><span>Pathly AI Career Advisor</span><button onclick="toggleChat()">✕</button></div>
+    <div class="chat-body" id="chatBody">
+      <div class="msg bot">Hi! Ask me about your target role, your skill gaps, your roadmap, or a specific skill you want to learn.</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Ask a question…" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+</div>
+
+<iframe name="hidden_sheet_iframe" id="hiddenSheetIframe" style="display:none"></iframe>
+<form id="sheetForm" method="POST" target="hidden_sheet_iframe" style="display:none">
+  <input type="hidden" name="name" id="sheetName">
+  <input type="hidden" name="email" id="sheetEmail">
+  <input type="hidden" name="phone" id="sheetPhone">
+</form>
+
+<script>
+/* =========================================================
+   CONFIG
+   ========================================================= */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz28T3FHvdpAHybD0mfFTvuH1JPhealFNU903ZQjgDfiU6pbxTx2GRReWEzgCUObAwyVg/exec";
+
+// Set this to your deployed backend (see server.js + README.md) to turn on
+// real AI: LLM-based skill extraction, roadmap generation, and chat.
+// Left as-is (localhost), the app runs its built-in local logic instead —
+// it still fully works, just without true AI understanding.
+const AI_BACKEND_URL = "http://localhost:3001";
+let aiBackendOnline = null; // null = not checked yet, true/false once known
+
+async function checkAiBackend(){
+  if(aiBackendOnline !== null) return aiBackendOnline;
+  try{
+    const ctrl = new AbortController();
+    const timeout = setTimeout(()=>ctrl.abort(), 2000);
+    const res = await fetch(`${AI_BACKEND_URL}/api/health`, { signal: ctrl.signal });
+    clearTimeout(timeout);
+    aiBackendOnline = res.ok;
+  }catch(e){
+    aiBackendOnline = false;
+  }
+  return aiBackendOnline;
+}
+
+const ROLE_DB = {"Engineering": [{"name": "Software Engineer", "skills": ["Data Structures & Algorithms", "Object-Oriented Programming", "Git & Version Control", "Problem Solving", "REST APIs", "System Design Basics", "SQL", "Communication"]}, {"name": "Full Stack Developer", "skills": ["HTML/CSS", "JavaScript", "React", "Node.js", "SQL", "REST APIs", "Git", "Communication"]}, {"name": "Frontend Developer", "skills": ["HTML/CSS", "JavaScript", "React/Vue", "Responsive Design", "Browser DevTools", "Attention to Detail"]}, {"name": "Backend Developer", "skills": ["Node.js/Python/Java", "REST APIs", "SQL/NoSQL Databases", "System Design", "Authentication & Security Basics", "Git", "Logical Thinking"]}, {"name": "AI Engineer", "skills": ["Python", "Machine Learning Fundamentals", "Deep Learning", "Model Deployment", "Data Preprocessing", "Cloud Platforms", "Prompt Engineering Basics", "Communication"]}, {"name": "Machine Learning Engineer", "skills": ["Python", "Statistics", "Machine Learning Algorithms", "Feature Engineering", "Model Evaluation", "MLOps Basics", "SQL", "Logical Thinking"]}, {"name": "Data Scientist", "skills": ["Python", "Statistics", "Machine Learning", "SQL", "Data Visualization", "Pandas", "Communication"]}, {"name": "Data Analyst", "skills": ["SQL", "Excel", "Data Visualization", "Statistics Basics", "Business Acumen", "Attention to Detail"]}, {"name": "Data Engineer", "skills": ["Python", "SQL", "ETL Pipelines", "Apache Spark", "Cloud Data Warehousing", "Airflow", "Logical Thinking"]}, {"name": "Cloud Engineer", "skills": ["AWS/Azure/GCP Basics", "Linux Administration", "Networking Basics", "Infrastructure as Code", "CI/CD", "Security Fundamentals", "Communication"]}, {"name": "Cloud Architect", "skills": ["Cloud Platform Design", "Infrastructure as Code", "Networking", "Security Architecture", "Cost Optimization", "Scalability Planning", "Stakeholder Communication", "Logical Thinking"]}, {"name": "DevOps Engineer", "skills": ["Docker", "Kubernetes", "CI/CD Pipelines", "Linux Administration", "Scripting (Bash/Python)", "Monitoring & Logging", "Teamwork & Collaboration"]}, {"name": "Cybersecurity Engineer", "skills": ["Network Security", "Penetration Testing", "Risk Assessment", "SIEM Tools", "Cryptography Basics", "Incident Response", "Attention to Detail"]}, {"name": "Cybersecurity Analyst", "skills": ["Threat Monitoring", "Vulnerability Assessment", "Security Tools (SIEM)", "Incident Response", "Networking Basics", "Logical Thinking"]}, {"name": "Prompt Engineer", "skills": ["LLM Fundamentals", "Prompt Design & Iteration", "Python Basics", "Evaluation & Testing", "Communication"]}, {"name": "Generative AI Engineer", "skills": ["Python", "LLM/Diffusion Model Fundamentals", "Fine-tuning Techniques", "Vector Databases", "RAG Pipelines", "Cloud Platforms", "Logical Thinking"]}, {"name": "AI/ML Researcher", "skills": ["Python", "Research Methodology", "Deep Learning Theory", "Statistics", "Scientific Writing", "Experiment Design", "Critical Thinking"]}, {"name": "MLOps Engineer", "skills": ["Docker", "Kubernetes", "CI/CD", "Model Serving", "Cloud Platforms", "Monitoring & Logging", "Communication"]}, {"name": "Mobile App Developer", "skills": ["Kotlin/Swift", "REST APIs", "UI Design Basics", "Git", "App Store Deployment", "Attention to Detail"]}, {"name": "Android Developer", "skills": ["Kotlin/Java", "Android SDK", "REST APIs", "Material Design", "Git", "Logical Thinking"]}, {"name": "iOS Developer", "skills": ["Swift", "UIKit/SwiftUI", "REST APIs", "Xcode", "Git", "Attention to Detail"]}, {"name": "QA Automation Engineer", "skills": ["Test Case Design", "Selenium/Playwright", "API Testing", "CI/CD Integration", "Bug Tracking Tools", "Attention to Detail"]}, {"name": "Embedded Systems Engineer", "skills": ["C/C++", "Microcontrollers", "RTOS Basics", "Circuit Reading", "Debugging Tools", "Communication Protocols (I2C/SPI)", "Logical Thinking"]}, {"name": "Network Engineer", "skills": ["Networking Fundamentals (TCP/IP)", "Routing & Switching", "Firewalls & VPNs", "Network Monitoring Tools", "Troubleshooting", "Communication"]}, {"name": "Solutions Architect", "skills": ["System Design", "Cloud Platforms", "Stakeholder Communication", "Cost & Scalability Planning", "Integration Patterns", "Documentation", "Logical Thinking"]}, {"name": "Blockchain Developer", "skills": ["Solidity", "Smart Contracts", "Cryptography Basics", "Web3.js/Ethers.js", "Consensus Mechanisms", "Logical Thinking"]}, {"name": "Game Developer", "skills": ["Unity/Unreal Engine", "C#/C++", "Game Physics Basics", "3D Math", "Version Control", "Creativity"]}, {"name": "Robotics Engineer", "skills": ["C++/Python", "ROS (Robot Operating System)", "Control Systems", "Sensors & Actuators", "Computer Vision Basics", "CAD", "Logical Thinking"]}, {"name": "VLSI Design Engineer", "skills": ["Digital Logic Design", "Verilog/VHDL", "Circuit Simulation Tools", "Physical Design Basics", "Timing Analysis", "Attention to Detail", "Communication"]}, {"name": "IoT Engineer", "skills": ["Embedded C", "Sensor Integration", "Networking Protocols (MQTT)", "Cloud IoT Platforms", "Microcontrollers", "Logical Thinking"]}], "Arts": [{"name": "Graphic Designer", "skills": ["Adobe Illustrator", "Adobe Photoshop", "Typography", "Layout Design", "Color Theory", "Creativity"]}, {"name": "UI/UX Designer", "skills": ["Figma", "User Research", "Wireframing", "Prototyping", "Usability Testing", "Communication"]}, {"name": "Content Writer", "skills": ["SEO Writing", "Copywriting Basics", "Research Skills", "Editing", "Communication"]}, {"name": "Copywriter", "skills": ["Persuasive Writing", "Brand Voice", "Editing", "Market Research", "Creativity"]}, {"name": "Video Editor", "skills": ["Premiere Pro", "Color Grading", "Sound Editing", "Storytelling", "File Management", "Attention to Detail"]}, {"name": "Film & Video Editor", "skills": ["Premiere Pro/DaVinci Resolve", "Storyboarding", "Color Grading", "Sound Design", "Creativity"]}, {"name": "Motion Graphics Designer", "skills": ["After Effects", "Animation Principles", "Typography", "Storyboarding", "Illustrator", "Creativity"]}, {"name": "Animator", "skills": ["2D/3D Animation", "Storyboarding", "Rigging", "Timing & Motion Principles", "After Effects", "Attention to Detail"]}, {"name": "3D Artist", "skills": ["Blender/Maya", "Texturing", "Lighting", "Modeling", "Rendering", "Creativity"]}, {"name": "Illustrator", "skills": ["Digital Illustration", "Procreate/Photoshop", "Composition", "Color Theory", "Creativity"]}, {"name": "Digital Illustrator", "skills": ["Digital Painting", "Character Design", "Color Theory", "Portfolio Building", "Attention to Detail"]}, {"name": "Art Director", "skills": ["Creative Vision", "Team Leadership", "Brand Guidelines", "Design Software Proficiency", "Client Communication", "Project Management", "Presentation Skills"]}, {"name": "Creative Director", "skills": ["Creative Strategy", "Team Leadership", "Brand Storytelling", "Stakeholder Management", "Portfolio Curation", "Presentation Skills", "Communication"]}, {"name": "Photographer", "skills": ["Composition", "Lightroom", "Studio Lighting", "Photo Editing", "Portfolio Building"]}, {"name": "Social Media Manager", "skills": ["Content Planning", "Copywriting", "Analytics Tools", "Community Engagement", "Scheduling Tools", "Communication"]}, {"name": "Social Media Content Creator", "skills": ["Content Ideation", "Short-form Video Editing", "Copywriting", "Trend Awareness", "Creativity"]}, {"name": "Digital Marketing Specialist", "skills": ["SEO", "SEM/Google Ads", "Analytics Tools", "Content Strategy", "Email Marketing", "Social Media Marketing", "Communication"]}, {"name": "Brand Designer", "skills": ["Logo Design", "Brand Guidelines", "Typography", "Adobe Illustrator", "Color Theory", "Attention to Detail"]}, {"name": "Brand Strategist", "skills": ["Market Research", "Brand Positioning", "Consumer Psychology", "Storytelling", "Presentation Skills", "Communication"]}, {"name": "Fashion Designer", "skills": ["Sketching", "Pattern Making", "Fabric Knowledge", "Adobe Illustrator", "Trend Forecasting", "Creativity"]}, {"name": "Interior Designer", "skills": ["Space Planning", "AutoCAD/SketchUp", "Material Knowledge", "Color Theory", "Client Communication", "Attention to Detail"]}, {"name": "Fashion Illustrator", "skills": ["Fashion Sketching", "Digital Illustration", "Color Theory", "Garment Knowledge", "Creativity"]}, {"name": "Animator / Motion Designer", "skills": ["After Effects", "2D Animation", "Storyboarding", "Sound Sync", "Typography", "Creativity"]}, {"name": "Creative Copywriter", "skills": ["Conceptual Thinking", "Brand Voice", "Storytelling", "Editing", "Creativity"]}, {"name": "Content Strategist", "skills": ["Content Planning", "SEO", "Analytics", "Editorial Calendars", "Audience Research", "Communication"]}], "Science": [{"name": "Research Scientist", "skills": ["Experimental Design", "Statistical Analysis", "Scientific Writing", "Lab Techniques", "Data Analysis", "Critical Thinking", "Communication"]}, {"name": "Data Scientist", "skills": ["Python", "Statistics", "Machine Learning", "SQL", "Data Visualization", "Research Methodology", "Communication"]}, {"name": "Biotechnologist", "skills": ["Molecular Biology", "Lab Protocols", "Bioinformatics Basics", "Data Analysis", "Regulatory Knowledge", "Aseptic Techniques", "Attention to Detail"]}, {"name": "Microbiologist", "skills": ["Microbial Culturing", "Lab Safety", "Microscopy", "Data Analysis", "Sterile Technique", "Attention to Detail"]}, {"name": "Biochemist", "skills": ["Biochemical Assays", "Lab Techniques", "Data Analysis", "Spectroscopy", "Scientific Writing", "Attention to Detail"]}, {"name": "Molecular Biologist", "skills": ["PCR & Gel Electrophoresis", "Cloning Techniques", "Cell Culture", "Bioinformatics Basics", "Data Analysis", "Lab Safety", "Attention to Detail"]}, {"name": "Chemist", "skills": ["Analytical Chemistry", "Lab Safety", "Spectroscopy", "Data Analysis", "Report Writing", "Attention to Detail"]}, {"name": "Analytical Chemist", "skills": ["Chromatography", "Spectroscopy", "Lab Safety", "Data Analysis", "Method Validation", "Attention to Detail"]}, {"name": "Physicist", "skills": ["Statistics", "Mathematical Modeling", "Python/MATLAB", "Data Analysis", "Scientific Computing", "Logical Thinking"]}, {"name": "Astrophysicist", "skills": ["Astronomical Data Analysis", "Python/MATLAB", "Statistics", "Scientific Writing", "Mathematical Modeling", "Critical Thinking"]}, {"name": "Environmental Scientist", "skills": ["Environmental Sampling", "GIS", "Data Analysis", "Regulatory Compliance", "Report Writing", "Communication"]}, {"name": "Environmental Consultant", "skills": ["Environmental Impact Assessment", "Regulatory Knowledge", "GIS", "Report Writing", "Client Communication", "Attention to Detail"]}, {"name": "Geologist", "skills": ["Field Sampling", "Rock & Mineral Identification", "GIS", "Data Analysis", "Report Writing", "Attention to Detail"]}, {"name": "Geophysicist", "skills": ["Seismic Data Analysis", "GIS", "Mathematical Modeling", "Data Interpretation", "Report Writing", "Logical Thinking"]}, {"name": "Food Scientist", "skills": ["Food Chemistry", "Lab Techniques", "Quality Control", "Regulatory Knowledge", "Data Analysis", "Attention to Detail"]}, {"name": "Food Technologist", "skills": ["Food Processing", "Quality Control", "Regulatory Compliance", "Lab Techniques", "Data Analysis", "Communication"]}, {"name": "Forensic Scientist", "skills": ["Evidence Analysis", "Lab Techniques", "Chain of Custody Procedures", "Report Writing", "Attention to Detail", "Critical Thinking"]}, {"name": "Clinical Research Scientist", "skills": ["Clinical Trial Design", "Regulatory Knowledge (GCP)", "Data Analysis", "Scientific Writing", "Patient Data Handling", "Statistics", "Attention to Detail"]}, {"name": "Pharmaceutical Scientist", "skills": ["Drug Formulation", "Lab Techniques", "Regulatory Knowledge", "Data Analysis", "Quality Control", "Scientific Writing", "Attention to Detail"]}, {"name": "Biomedical Scientist", "skills": ["Lab Diagnostics", "Sample Analysis", "Data Analysis", "Regulatory Compliance", "Lab Safety", "Scientific Writing", "Attention to Detail"]}, {"name": "Neuroscientist", "skills": ["Neuroanatomy Knowledge", "Lab Techniques", "Data Analysis", "Statistics", "Scientific Writing", "Critical Thinking"]}, {"name": "Marine Scientist", "skills": ["Field Sampling", "Data Analysis", "GIS", "Marine Ecology Knowledge", "Report Writing", "Communication"]}, {"name": "Agricultural Scientist", "skills": ["Soil & Crop Analysis", "Field Research", "Data Analysis", "Report Writing", "Regulatory Knowledge", "Communication"]}, {"name": "Materials Scientist", "skills": ["Materials Characterization", "Lab Techniques", "Data Analysis", "CAD/Simulation Tools", "Quality Control", "Scientific Writing", "Attention to Detail"]}, {"name": "Renewable Energy Scientist", "skills": ["Energy Systems Knowledge", "Data Analysis", "Sustainability Assessment", "Report Writing", "Regulatory Knowledge", "Communication"]}]};
+const ALL_SKILLS = ["2D Animation", "2D/3D Animation", "3D Math", "API Testing", "AWS/Azure/GCP Basics", "Adaptability", "Adobe Illustrator", "Adobe Photoshop", "After Effects", "Airflow", "Analytical Chemistry", "Analytical Thinking", "Analytics", "Analytics Tools", "Android SDK", "Animation Principles", "Apache Spark", "App Store Deployment", "Aptitude & Problem Solving", "Aseptic Techniques", "Astronomical Data Analysis", "Attention to Detail", "Audience Research", "Authentication & Security Basics", "AutoCAD/SketchUp", "Biochemical Assays", "Bioinformatics Basics", "Blender/Maya", "Brand Guidelines", "Brand Positioning", "Brand Storytelling", "Brand Voice", "Browser DevTools", "Bug Tracking Tools", "Business Acumen", "C#/C++", "C++/Python", "C/C++", "CAD", "CAD/Simulation Tools", "CI/CD", "CI/CD Integration", "CI/CD Pipelines", "Cell Culture", "Chain of Custody Procedures", "Character Design", "Chromatography", "Circuit Reading", "Circuit Simulation Tools", "Client Communication", "Clinical Trial Design", "Cloning Techniques", "Cloud Data Warehousing", "Cloud IoT Platforms", "Cloud Platform Design", "Cloud Platforms", "Color Grading", "Color Theory", "Communication", "Communication Protocols (I2C/SPI)", "Community Engagement", "Composition", "Computer Vision Basics", "Conceptual Thinking", "Consensus Mechanisms", "Consumer Psychology", "Content Ideation", "Content Planning", "Content Strategy", "Control Systems", "Copywriting", "Copywriting Basics", "Cost & Scalability Planning", "Cost Optimization", "Creative Strategy", "Creative Vision", "Creativity", "Critical Thinking", "Cryptography Basics", "Data Analysis", "Data Interpretation", "Data Preprocessing", "Data Structures & Algorithms", "Data Visualization", "Debugging Tools", "Deep Learning", "Deep Learning Theory", "Design Software Proficiency", "Digital Illustration", "Digital Logic Design", "Digital Painting", "Docker", "Documentation", "Drug Formulation", "ETL Pipelines", "Editing", "Editorial Calendars", "Email Marketing", "Embedded C", "Energy Systems Knowledge", "Environmental Impact Assessment", "Environmental Sampling", "Evaluation & Testing", "Evidence Analysis", "Excel", "Experiment Design", "Experimental Design", "Fabric Knowledge", "Fashion Sketching", "Feature Engineering", "Field Research", "Field Sampling", "Figma", "File Management", "Fine-tuning Techniques", "Firewalls & VPNs", "Food Chemistry", "Food Processing", "GIS", "Game Physics Basics", "Garment Knowledge", "Git", "Git & Version Control", "HTML/CSS", "Illustrator", "Incident Response", "Infrastructure as Code", "Integration Patterns", "JavaScript", "Kotlin/Java", "Kotlin/Swift", "Kubernetes", "LLM Fundamentals", "LLM/Diffusion Model Fundamentals", "Lab Diagnostics", "Lab Protocols", "Lab Safety", "Lab Techniques", "Layout Design", "Lighting", "Lightroom", "Linux Administration", "Logical Thinking", "Logo Design", "MLOps Basics", "Machine Learning", "Machine Learning Algorithms", "Machine Learning Fundamentals", "Marine Ecology Knowledge", "Market Research", "Material Design", "Material Knowledge", "Materials Characterization", "Mathematical Modeling", "Method Validation", "Microbial Culturing", "Microcontrollers", "Microscopy", "Model Deployment", "Model Evaluation", "Model Serving", "Modeling", "Molecular Biology", "Monitoring & Logging", "Negotiation", "Network Monitoring Tools", "Network Security", "Networking", "Networking Basics", "Networking Fundamentals (TCP/IP)", "Networking Protocols (MQTT)", "Neuroanatomy Knowledge", "Node.js", "Node.js/Python/Java", "Object-Oriented Programming", "PCR & Gel Electrophoresis", "Pandas", "Patient Data Handling", "Pattern Making", "Penetration Testing", "Persuasive Writing", "Photo Editing", "Physical Design Basics", "Portfolio Building", "Portfolio Curation", "PowerPoint", "Premiere Pro", "Premiere Pro/DaVinci Resolve", "Presentation Skills", "Problem Solving", "Procreate/Photoshop", "Project Management", "Prompt Design & Iteration", "Prompt Engineering Basics", "Prototyping", "Python", "Python Basics", "Python/MATLAB", "Quality Control", "RAG Pipelines", "REST APIs", "ROS (Robot Operating System)", "RTOS Basics", "React", "React/Vue", "Regulatory Compliance", "Regulatory Knowledge", "Regulatory Knowledge (GCP)", "Rendering", "Report Writing", "Research Methodology", "Research Skills", "Responsive Design", "Rigging", "Risk Assessment", "Rock & Mineral Identification", "Routing & Switching", "SEM/Google Ads", "SEO", "SEO Writing", "SIEM Tools", "SQL", "SQL/NoSQL Databases", "Sample Analysis", "Scalability Planning", "Scheduling Tools", "Scientific Computing", "Scientific Writing", "Scripting (Bash/Python)", "Security Architecture", "Security Fundamentals", "Security Tools (SIEM)", "Seismic Data Analysis", "Selenium/Playwright", "Sensor Integration", "Sensors & Actuators", "Short-form Video Editing", "Sketching", "Smart Contracts", "Social Media Marketing", "Soil & Crop Analysis", "Solidity", "Sound Design", "Sound Editing", "Sound Sync", "Space Planning", "Spectroscopy", "Stakeholder Communication", "Stakeholder Management", "Statistical Analysis", "Statistics", "Statistics Basics", "Sterile Technique", "Storyboarding", "Storytelling", "Studio Lighting", "Sustainability Assessment", "Swift", "System Design", "System Design Basics", "Team Leadership", "Teamwork & Collaboration", "Test Case Design", "Texturing", "Threat Monitoring", "Time Management", "Timing & Motion Principles", "Timing Analysis", "Trend Awareness", "Trend Forecasting", "Troubleshooting", "Typography", "UI Design Basics", "UIKit/SwiftUI", "Unity/Unreal Engine", "Usability Testing", "User Research", "Vector Databases", "Verilog/VHDL", "Version Control", "Vulnerability Assessment", "Web3.js/Ethers.js", "Wireframing", "Xcode"];
+const RESUME_TIPS = ["Quantify achievements with real numbers where you can (e.g. \"improved load time by 30%\" instead of \"improved load time\").", "Keep it to 1-2 pages - recruiters skim resumes in seconds, so lead with your strongest, most relevant points.", "Mirror the exact keywords from the job description in your skills section - many companies filter resumes with automated keyword matching before a human ever sees them.", "Use consistent formatting (fonts, spacing, bullet style) throughout - inconsistency reads as carelessness.", "Proofread for typos and tense consistency - use past tense for old roles, present tense for your current one."];
+const GENERIC_SKILLS = ["Communication","Domain Fundamentals","Problem Solving","Tools & Software Proficiency","Industry Certifications"];
+
+/* =========================================================
+   APP STATE
+   ========================================================= */
+const state = {
+  profile: { name:"", email:"", phone:"" },
+  role: null,
+  extractedSkills: [],
+  gap: null,
+  plan: []
+};
+
+/* =========================================================
+   WIZARD NAVIGATION
+   ========================================================= */
+const TOTAL_STEPS = 10;
+let currentStep = 0;
+
+function renderStep(){
+  document.querySelectorAll('.screen').forEach(s=>{
+    s.classList.toggle('active', Number(s.dataset.step) === currentStep);
+  });
+  document.getElementById('progressFill').style.width = ((currentStep)/(TOTAL_STEPS-1))*100 + '%';
+  document.getElementById('stepCount').textContent = `Step ${currentStep+1} / ${TOTAL_STEPS}`;
+  document.getElementById('backBtn').style.visibility = currentStep === 0 ? 'hidden' : 'visible';
+
+  if(currentStep === 2) renderRoleList();
+  if(currentStep === 4) renderResumeInsights();
+  if(currentStep === 5) renderQuiz();
+  if(currentStep === 6) renderGapAnalysis();
+  if(currentStep === 7) renderRoadmap();
+  if(currentStep === 8) renderCoursePicks();
+  if(currentStep === 9) renderDashboard();
+}
+function goTo(step){ currentStep = Math.max(0, Math.min(TOTAL_STEPS-1, step)); renderStep(); }
+function goBack(){ goTo(currentStep-1); }
+
+function selectOption(el){
+  el.parentElement.querySelectorAll('.option').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+/* =========================================================
+   STEP 1 — Profile -> Google Sheets (hidden-iframe form POST)
+   ========================================================= */
+function submitProfile(){
+  const name = document.getElementById('pName').value.trim();
+  const email = document.getElementById('pEmail').value.trim();
+  const phone = document.getElementById('pPhone').value.trim();
+  const statusEl = document.getElementById('profileStatus');
+  const btn = document.getElementById('profileSubmitBtn');
+
+  if(!name || !email || !phone){
+    statusEl.textContent = "Please fill in all fields.";
+    statusEl.className = "status-msg err";
+    return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    statusEl.textContent = "Please enter a valid email address.";
+    statusEl.className = "status-msg err";
+    return;
+  }
+
+  state.profile = { name, email, phone };
+  btn.disabled = true;
+  statusEl.textContent = "Saving your profile…";
+  statusEl.className = "status-msg";
+
+  const form = document.getElementById('sheetForm');
+  document.getElementById('sheetName').value = name;
+  document.getElementById('sheetEmail').value = email;
+  document.getElementById('sheetPhone').value = phone;
+  form.action = APPS_SCRIPT_URL;
+
+  const iframe = document.getElementById('hiddenSheetIframe');
+  let done = false;
+  iframe.onload = function(){
+    if(done) return;
+    done = true;
+    statusEl.textContent = "Profile saved!";
+    statusEl.className = "status-msg ok";
+    btn.disabled = false;
+    setTimeout(()=>goTo(2), 500);
+  };
+  form.submit();
+  setTimeout(()=>{
+    if(!done){
+      done = true;
+      statusEl.textContent = "Saved (check your Sheet if it's missing).";
+      statusEl.className = "status-msg ok";
+      btn.disabled = false;
+      goTo(2);
+    }
+  }, 4000);
+}
+
+/* =========================================================
+   STEP 2 — Dynamic, categorized role picker (80 roles)
+   ========================================================= */
+let activeCategory = "Engineering";
+
+function renderCatTabs(){
+  const wrap = document.getElementById('catTabs');
+  wrap.innerHTML = Object.keys(ROLE_DB).map(cat =>
+    `<button type="button" class="cat-tab ${cat===activeCategory?'active':''}" onclick="setCategory('${cat}')">${cat}</button>`
+  ).join('');
+}
+function setCategory(cat){
+  activeCategory = cat;
+  document.getElementById('roleSearch').value = '';
+  renderRoleList();
+}
+
+function renderRoleList(){
+  renderCatTabs();
+  const search = document.getElementById('roleSearch').value.trim().toLowerCase();
+  const listEl = document.getElementById('roleList');
+  let roles = [];
+  if(search){
+    Object.entries(ROLE_DB).forEach(([cat, arr])=>{
+      arr.forEach(r => { if(r.name.toLowerCase().includes(search)) roles.push({...r, category:cat}); });
+    });
+  } else {
+    roles = ROLE_DB[activeCategory].map(r => ({...r, category:activeCategory}));
+  }
+  if(roles.length === 0){
+    listEl.innerHTML = `<p style="font-size:13px; color:var(--muted);">No matching role — you can still type a custom one below and continue with a general skill checklist.</p>`;
+  } else {
+    listEl.innerHTML = roles.map(r =>
+      `<button type="button" class="role-item ${state.role && state.role.name===r.name && state.role.category===r.category ? 'selected':''}" onclick='pickRole(${JSON.stringify(r).replace(/'/g,"&#39;")})'>${r.name}<small>${r.category} · ${r.skills.length} core skills</small></button>`
+    ).join('');
+  }
+}
+
+function pickRole(role){
+  state.role = role;
+  document.getElementById('roleNextBtn').disabled = false;
+  document.getElementById('roleStatus').textContent = `Selected: ${role.name}`;
+  document.getElementById('roleStatus').className = "status-msg ok";
+  renderRoleList();
+}
+
+function confirmRole(){
+  if(!state.role){
+    document.getElementById('roleStatus').textContent = "Pick a role first.";
+    document.getElementById('roleStatus').className = "status-msg err";
+    return;
+  }
+  goTo(3);
+}
+
+/* =========================================================
+   STEP 3 — Real resume text extraction (pdf.js / mammoth.js)
+   + keyword matching against the skill dictionary. No backend
+   = no true LLM extraction; this is honest keyword matching.
+   ========================================================= */
+function onResumeFileChosen(input){
+  const hint = document.getElementById('resumeFileHint');
+  if(input.files && input.files.length) hint.textContent = `Selected: ${input.files[0].name}`;
+}
+
+function toggleManualSkills(){
+  const wrap = document.getElementById('manualSkillsWrap');
+  const card = document.getElementById('resumeUploadCard');
+  const btn = document.getElementById('manualToggleBtn');
+  const showingManual = wrap.style.display === 'none';
+  wrap.style.display = showingManual ? 'block' : 'none';
+  card.style.display = showingManual ? 'none' : 'block';
+  btn.textContent = showingManual ? 'Upload a resume file instead' : 'Or enter skills manually instead';
+}
+
+async function extractTextFromFile(file){
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(ext === 'txt') return await file.text();
+  if(ext === 'pdf'){
+    const buf = await file.arrayBuffer();
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    let text = '';
+    for(let i=1; i<=pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return text;
+  }
+  if(ext === 'docx' || ext === 'doc'){
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({arrayBuffer: buf});
+    return result.value;
+  }
+  throw new Error('Unsupported file type: ' + ext);
+}
+
+function matchSkillsInText(text){
+  const lower = text.toLowerCase();
+  return ALL_SKILLS.filter(skill => lower.includes(skill.toLowerCase()));
+}
+
+async function runResumeAnalysis(){
+  const btn = document.getElementById('analyzeBtn');
+  const statusEl = document.getElementById('analyzeStatus');
+  const chipsEl = document.getElementById('extractedChips');
+  const fileInput = document.getElementById('resumeFile');
+  const manualSkills = document.getElementById('manualSkills').value.trim();
+  const hasFile = fileInput.files && fileInput.files.length > 0;
+
+  if(!hasFile && !manualSkills){
+    statusEl.textContent = "Upload a resume or enter at least one skill first.";
+    statusEl.className = "status-msg err";
+    return;
+  }
+
+  btn.disabled = true;
+  statusEl.textContent = "Reading your resume…";
+  statusEl.className = "status-msg";
+  chipsEl.innerHTML = '';
+  state.aiExtraction = null;
+
+  try{
+    let found = [];
+    if(hasFile){
+      const text = await extractTextFromFile(fileInput.files[0]);
+      state.lastResumeText = text;
+      found = matchSkillsInText(text); // local keyword-match baseline, always available
+
+      const roleSkills = state.role ? state.role.skills : GENERIC_SKILLS;
+      const online = await checkAiBackend();
+      if(online){
+        statusEl.textContent = "AI is reading your resume for real (not just keyword matching)…";
+        try{
+          const res = await fetch(`${AI_BACKEND_URL}/api/extract-skills`, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ resumeText: text, roleName: state.role ? state.role.name : null, roleSkills })
+          });
+          if(res.ok){
+            const data = await res.json();
+            if(Array.isArray(data.matchedSkills)){
+              found = [...new Set([...found, ...data.matchedSkills])];
+              state.aiExtraction = data; // keeps { matchedSkills, reasoning } for the Insights step
+            }
+          }
+        }catch(aiErr){
+          console.warn('AI extraction failed, using local keyword match only:', aiErr);
+        }
+      }
+
+      if(found.length === 0){
+        statusEl.textContent = "Couldn't confidently match skills in that file — add any missing ones manually below.";
+        statusEl.className = "status-msg err";
+        toggleManualSkills();
+      }
+    }
+    if(manualSkills){
+      const manual = manualSkills.split(',').map(s=>s.trim()).filter(Boolean);
+      found = [...new Set([...found, ...manual])];
+    }
+    state.extractedSkills = found;
+    chipsEl.innerHTML = found.length
+      ? found.map(s => `<span class="chip have">${s}</span>`).join('')
+      : `<span class="chip gap">No skills detected yet</span>`;
+    if(found.length){
+      statusEl.textContent = state.aiExtraction
+        ? `AI found ${found.length} skill${found.length>1?'s':''}.`
+        : `Found ${found.length} skill${found.length>1?'s':''} (local match — connect the AI backend for smarter results).`;
+      statusEl.className = "status-msg ok";
+      setTimeout(()=>goTo(4), 700);
+    }
+  }catch(err){
+    statusEl.textContent = "Couldn't read that file (" + err.message + "). Try manual entry instead.";
+    statusEl.className = "status-msg err";
+    toggleManualSkills();
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+/* =========================================================
+   STEP 4 — Resume Insights: what's working, what to fix,
+   plus general resume-quality tips.
+   ========================================================= */
+function renderResumeInsights(){
+  const gap = computeGap();
+  const goodEl = document.getElementById('insightGood');
+  const focusEl = document.getElementById('insightFocus');
+  const tipsEl = document.getElementById('insightTips');
+  const roleName = state.role ? state.role.name : 'your target role';
+  const aiReasoning = (state.aiExtraction && state.aiExtraction.reasoning) || {};
+
+  goodEl.innerHTML = gap.mastered.length
+    ? gap.mastered.map(s => `<li><strong>${s}</strong> — ${aiReasoning[s] || `is clearly represented and matches what ${roleName} looks for.`}</li>`).join('')
+    : `<li>We didn't confidently detect any of ${roleName}'s core skills yet — try adding more detail or use manual entry on the previous step.</li>`;
+
+  focusEl.innerHTML = gap.gaps.length
+    ? gap.gaps.map(s => `<li>Add measurable experience with <strong>${s}</strong> — it's a core requirement for ${roleName} but wasn't found in what you submitted.</li>`).join('')
+    : `<li>No missing core skills for ${roleName} — strong match.</li>`;
+
+  tipsEl.innerHTML = RESUME_TIPS.map(t => `<li>${t}</li>`).join('') +
+    (state.aiExtraction ? '' : `<li>Connect the AI backend (see README.md) for smarter, context-aware resume reading instead of keyword matching.</li>`);
+}
+
+/* =========================================================
+   STEP 5 — Skill assessment
+   ========================================================= */
+let quizTargetSkill = null;
+function renderQuiz(){
+  const q = document.getElementById('quizQuestion');
+  const opts = document.getElementById('quizOptions');
+  if(!state.role){
+    q.textContent = "Pick a target role first (Step 2), then come back here.";
+    opts.innerHTML = '';
+    return;
+  }
+  const uncertain = state.role.skills.find(s => !state.extractedSkills.includes(s)) || state.role.skills[0];
+  quizTargetSkill = uncertain;
+  q.textContent = `How comfortable are you with "${uncertain}"?`;
+  opts.innerHTML = ["Not confident","Somewhat","Confident","Expert"].map(label =>
+    `<button type="button" class="option" onclick="answerQuiz(this, '${label}')">${label}</button>`
+  ).join('');
+}
+function answerQuiz(el, label){
+  selectOption(el);
+  if((label === "Confident" || label === "Expert") && quizTargetSkill && !state.extractedSkills.includes(quizTargetSkill)){
+    state.extractedSkills.push(quizTargetSkill);
+  }
+}
+
+/* =========================================================
+   STEP 6 — Gap analysis
+   ========================================================= */
+function computeGap(){
+  const requiredSkills = state.role ? state.role.skills : GENERIC_SKILLS;
+  const have = state.extractedSkills.map(s=>s.toLowerCase());
+  const mastered = requiredSkills.filter(s => have.includes(s.toLowerCase()));
+  const gaps = requiredSkills.filter(s => !have.includes(s.toLowerCase()));
+  const matchPercent = requiredSkills.length ? Math.round((mastered.length/requiredSkills.length)*100) : 0;
+  state.gap = { matchPercent, mastered, gaps };
+  return state.gap;
+}
+
+function renderGapAnalysis(){
+  const gap = computeGap();
+  document.getElementById('gapRoleName').textContent = state.role ? state.role.name : 'no role selected';
+  document.getElementById('gapPercent').textContent = gap.matchPercent + '%';
+  document.getElementById('gapGauge').style.width = gap.matchPercent + '%';
+  const listEl = document.getElementById('gapList');
+  listEl.innerHTML =
+    gap.mastered.map(s => `<div class="skill-row"><span>${s}</span><span class="tag mastered">Mastered</span></div>`).join('') +
+    gap.gaps.map(s => `<div class="skill-row"><span>${s}</span><span class="tag critical">Gap</span></div>`).join('');
+  if(gap.gaps.length === 0){
+    listEl.innerHTML += `<p style="font-size:13px; color:var(--green-2); margin-top:6px;">No gaps found — you're fully matched for this role.</p>`;
+  }
+}
+
+/* =========================================================
+   STEP 7 — Roadmap
+   ========================================================= */
+function searchLinks(skill){
+  const q = encodeURIComponent(skill + " course");
+  return {
+    google: `https://www.google.com/search?q=${q}`,
+    youtube: `https://www.youtube.com/results?search_query=${encodeURIComponent(skill + " tutorial")}`,
+    coursera: `https://www.coursera.org/search?query=${encodeURIComponent(skill)}`,
+  };
+}
+
+function renderRoadmapItems(items, isAi){
+  const wrap = document.getElementById('roadmapList');
+  wrap.innerHTML =
+    (isAi ? `<p style="font-size:11px; color:var(--green-2); font-weight:600; margin-bottom:8px;">✓ AI-generated roadmap</p>` : `<p style="font-size:11px; color:var(--muted); margin-bottom:8px;">Local fallback roadmap — connect the AI backend for a smarter, reasoned order.</p>`) +
+    items.map((item, i) => {
+      const links = searchLinks(item.skill);
+      return `<div class="roadmap-item">
+        <div class="roadmap-dot">${i+1}</div>
+        <div>
+          <h4>Learn: ${item.skill}</h4>
+          <p>${item.estimatedTime || 'Est. 1–2 weeks depending on prior exposure'}${item.difficulty ? ' · ' + item.difficulty : ''}</p>
+          ${item.rationale ? `<p style="font-style:italic;">${item.rationale}</p>` : ''}
+          <div class="roadmap-tags">
+            <a href="${links.google}" target="_blank" rel="noopener">Google</a>
+            <a href="${links.youtube}" target="_blank" rel="noopener">YouTube</a>
+            <a href="${links.coursera}" target="_blank" rel="noopener">Coursera</a>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+async function renderRoadmap(){
+  const gap = state.gap || computeGap();
+  const wrap = document.getElementById('roadmapList');
+  if(gap.gaps.length === 0){
+    wrap.innerHTML = `<p style="font-size:13px; color:var(--green-2);">No gaps left to roadmap — nice work.</p>`;
+    return;
+  }
+
+  // Local fallback shown immediately so the screen is never empty while we check for AI
+  const localItems = gap.gaps.map(skill => ({ skill }));
+  renderRoadmapItems(localItems, false);
+
+  const online = await checkAiBackend();
+  if(!online) return;
+
+  wrap.insertAdjacentHTML('afterbegin', `<p style="font-size:12px; color:var(--muted);">Asking the AI to build a smarter roadmap…</p>`);
+  try{
+    const res = await fetch(`${AI_BACKEND_URL}/api/generate-roadmap`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        roleName: state.role ? state.role.name : 'this role',
+        gapSkills: gap.gaps,
+        experienceLevel: 'not specified'
+      })
+    });
+    if(res.ok){
+      const data = await res.json();
+      if(Array.isArray(data.roadmap) && data.roadmap.length){
+        state.aiRoadmap = data.roadmap;
+        renderRoadmapItems(data.roadmap, true);
+      }
+    }
+  }catch(err){
+    console.warn('AI roadmap generation failed, keeping local fallback:', err);
+  }
+}
+
+/* =========================================================
+   STEP 8 — Course/project picks + working Add to Plan
+   ========================================================= */
+function renderCoursePicks(){
+  const gap = state.gap || computeGap();
+  const wrap = document.getElementById('courseCarousel');
+  if(gap.gaps.length === 0){
+    wrap.innerHTML = `<p style="font-size:13px; color:var(--green-2);">No gap skills to recommend courses for.</p>`;
+    return;
+  }
+  wrap.innerHTML = gap.gaps.map(skill => {
+    const links = searchLinks(skill);
+    const inPlan = state.plan.some(p => p.skill === skill);
+    return `<div class="course-card">
+      <h4>${skill}</h4>
+      <p>Curated search across free and paid sources</p>
+      <div class="links">
+        <a href="${links.google}" target="_blank" rel="noopener">Google</a>
+        <a href="${links.youtube}" target="_blank" rel="noopener">YouTube</a>
+        <a href="${links.coursera}" target="_blank" rel="noopener">Coursera</a>
+      </div>
+      <button class="btn ${inPlan ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="addToPlan('${skill.replace(/'/g,"\\'")}', this)">${inPlan ? 'Added ✓' : 'Add to Plan'}</button>
+    </div>`;
+  }).join('');
+}
+
+function addToPlan(skill, btnEl){
+  if(!state.plan.some(p => p.skill === skill)){
+    state.plan.push({ skill, done:false });
+  }
+  if(btnEl){ btnEl.textContent = 'Added ✓'; btnEl.classList.remove('btn-primary'); btnEl.classList.add('btn-secondary'); }
+}
+
+/* =========================================================
+   STEP 9 — Dashboard
+   ========================================================= */
+function renderDashboard(){
+  const wrap = document.getElementById('planList');
+  if(state.plan.length === 0){
+    wrap.innerHTML = `<p style="font-size:13px; color:var(--muted);">Nothing in your plan yet — add items from the Course &amp; Project Picks step.</p>`;
+  } else {
+    wrap.innerHTML = state.plan.map((item, i) => `
+      <div class="skill-row">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="checkbox" ${item.done ? 'checked' : ''} onchange="togglePlanItem(${i})">
+          <span>${item.skill}</span>
+        </label>
+        <span class="tag ${item.done ? 'mastered' : 'critical'}">${item.done ? 'Done' : 'In progress'}</span>
+      </div>`).join('');
+  }
+  updateRing();
+}
+
+function togglePlanItem(i){
+  state.plan[i].done = !state.plan[i].done;
+  renderDashboard();
+}
+
+function updateRing(){
+  const total = state.plan.length;
+  const done = state.plan.filter(p=>p.done).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+  const circumference = 326.7;
+  document.getElementById('ringProgress').style.strokeDashoffset = circumference - (circumference*pct/100);
+  document.getElementById('ringPercent').textContent = pct + '%';
+}
+
+function rerunGapAnalysis(){
+  state.plan.filter(p=>p.done).forEach(p=>{
+    if(!state.extractedSkills.includes(p.skill)) state.extractedSkills.push(p.skill);
+  });
+  computeGap();
+  alert(`Re-analyzed. Updated match: ${state.gap.matchPercent}% for ${state.role ? state.role.name : 'your role'}.`);
+  renderDashboard();
+}
+
+/* =========================================================
+   CHATBOT — rule-based, reads real state. True LLM calls need
+   a server-side API key.
+   ========================================================= */
+function toggleChat(){ document.getElementById('chatPanel').classList.toggle('open'); }
+
+const GLOSSARY = {
+  "llm": "An LLM (Large Language Model) is an AI model trained on huge amounts of text to understand and generate human-like language — it's the technology behind tools like ChatGPT and Claude.",
+  "llm fundamentals": "LLM Fundamentals means understanding how large language models work at a basic level — training data, tokens, context windows, and how they generate responses.",
+  "rag": "RAG (Retrieval-Augmented Generation) is a technique where an AI looks up relevant documents before generating an answer, making responses more accurate and current.",
+  "rag pipelines": "A RAG pipeline is the system that retrieves relevant documents and feeds them to an LLM so its answers are grounded in real, up-to-date information.",
+  "prompt engineering": "Prompt engineering is the practice of crafting effective inputs (prompts) to get accurate, useful outputs from an AI model.",
+  "prompt design & iteration": "Prompt design & iteration means writing a prompt, testing the AI's output, and refining the wording until you reliably get the result you want.",
+  "aptitude": "Aptitude is your natural ability to learn and solve problems quickly — often tested through logical, numerical, and verbal reasoning questions in interviews.",
+  "aptitude & problem solving": "Aptitude & problem solving is the ability to think through unfamiliar problems logically and reach a correct solution efficiently, often tested in interview rounds.",
+  "logical thinking": "Logical thinking is the ability to reason through a problem step by step to reach a valid conclusion — a core skill for engineering and analytical roles.",
+  "communication": "Communication is the ability to clearly convey and receive information — written, verbal, or visual — so teams and stakeholders stay aligned.",
+  "critical thinking": "Critical thinking is the ability to objectively analyze information and form a reasoned judgment rather than accepting things at face value.",
+  "attention to detail": "Attention to detail is the ability to notice small errors or inconsistencies that others might miss — important in QA, design, and lab work alike.",
+  "time management": "Time management is the ability to plan and prioritize tasks effectively to meet deadlines without burning out.",
+  "teamwork & collaboration": "Teamwork & collaboration is the ability to work effectively with others toward a shared goal, communicating clearly and sharing credit fairly.",
+  "machine learning": "Machine learning is a branch of AI where systems learn patterns from data instead of being explicitly programmed for every rule.",
+  "deep learning": "Deep learning is a subset of machine learning that uses multi-layered neural networks to learn complex patterns, commonly used in image and language tasks.",
+  "generative ai": "Generative AI refers to models that create new content — text, images, audio, or code — rather than just analyzing existing data.",
+  "api": "An API (Application Programming Interface) is a set of rules that lets one piece of software talk to another, e.g. your app requesting data from a server.",
+  "rest apis": "A REST API is a common style of API that uses standard HTTP methods (GET, POST, PUT, DELETE) to let applications communicate over the web.",
+  "sql": "SQL (Structured Query Language) is the standard language used to store, retrieve, and manage data in relational databases.",
+  "git": "Git is a version control system that tracks changes to code over time, letting teams collaborate without overwriting each other's work.",
+  "git & version control": "Git & version control means tracking every change to a codebase over time so teams can collaborate safely and roll back mistakes.",
+  "docker": "Docker is a tool that packages an application and everything it needs into a lightweight, portable \"container\" that runs the same way everywhere.",
+  "kubernetes": "Kubernetes is a system for automatically deploying, scaling, and managing containerized applications across many machines.",
+  "ci/cd": "CI/CD (Continuous Integration/Continuous Deployment) is a practice of automatically testing and releasing code changes frequently and reliably.",
+  "cloud platforms": "Cloud platforms (like AWS, Azure, or GCP) let you rent computing resources — servers, storage, databases — over the internet instead of owning hardware.",
+  "figma": "Figma is a collaborative design tool used to create UI/UX mockups, prototypes, and design systems.",
+  "seo": "SEO (Search Engine Optimization) is the practice of improving content so it ranks higher in search engine results.",
+  "gis": "GIS (Geographic Information System) is software used to capture, analyze, and visualize location-based (spatial) data.",
+  "system design": "System design is the process of planning how the parts of a software system fit together to be scalable, reliable, and maintainable.",
+  "data structures & algorithms": "Data structures & algorithms means knowing how to organize data efficiently and write step-by-step procedures to solve problems quickly.",
+};
+
+function normalizeTerm(t){
+  return t.replace(/[?.!]+$/,'').replace(/^(a|an|the)\s+/,'').trim().toLowerCase();
+}
+
+function lookupGlossary(term){
+  const t = normalizeTerm(term);
+  if(GLOSSARY[t]) return GLOSSARY[t];
+  // try partial match against glossary keys
+  const key = Object.keys(GLOSSARY).find(k => k.includes(t) || t.includes(k));
+  if(key) return GLOSSARY[key];
+  // try matching against a known skill name even without an exact glossary entry
+  const skill = ALL_SKILLS.find(s => s.toLowerCase().includes(t) || t.includes(s.toLowerCase()));
+  if(skill){
+    const roles = [];
+    Object.entries(ROLE_DB).forEach(([cat, arr]) => arr.forEach(r => { if(r.skills.includes(skill)) roles.push(r.name); }));
+    const links = searchLinks(skill);
+    return `"${skill}" is a core skill for roles like ${roles.slice(0,3).join(', ') || 'several roles in our database'}. Quick links — Google: ${links.google}`;
+  }
+  return null;
+}
+
+function answerFor(raw){
+  const msg = raw.toLowerCase();
+  if(/\b(hi|hello|hey)\b/.test(msg)){
+    return "Hey! I can talk about your target role, your skill gaps, your roadmap, or a specific skill — what do you want to know?";
+  }
+  if(msg.includes('role') || msg.includes('career goal')){
+    return state.role
+      ? `Your target role is ${state.role.name}. Core skills for it: ${state.role.skills.join(', ')}.`
+      : "You haven't picked a target role yet — head to Step 2 to choose one.";
+  }
+  if(msg.includes('gap') || msg.includes('missing') || msg.includes('weak')){
+    const gap = state.gap || (state.role ? computeGap() : null);
+    if(!gap) return "Pick a role and run the resume analysis first, then I can tell you your gaps.";
+    return gap.gaps.length
+      ? `Your current gaps for ${state.role.name}: ${gap.gaps.join(', ')}. You're at ${gap.matchPercent}% match.`
+      : `No gaps left — you're fully matched for ${state.role.name}!`;
+  }
+  if(msg.includes('roadmap') || msg.includes('plan') || msg.includes('what should i learn')){
+    const gap = state.gap || (state.role ? computeGap() : null);
+    if(!gap || gap.gaps.length===0) return "No open roadmap items right now — nice work, or pick a role/run analysis first.";
+    return `Suggested order: ${gap.gaps.slice(0,3).join(' → ')}${gap.gaps.length>3 ? ', …' : ''}. Add any of these to your plan from Step 8.`;
+  }
+  if(msg.includes('progress') || msg.includes('dashboard') || msg.includes('complete')){
+    const total = state.plan.length, done = state.plan.filter(p=>p.done).length;
+    return total ? `You've completed ${done} of ${total} items in your plan.` : "Your plan is empty — add items from Step 8 first.";
+  }
+  if(msg.includes('resume') || msg.includes('cv')){
+    const gap = state.gap || (state.role ? computeGap() : null);
+    if(!gap) return "Upload your resume in Step 3 first, then I can tell you what's working and what to fix.";
+    return `Strengths: ${gap.mastered.join(', ') || 'none detected yet'}. Focus areas: ${gap.gaps.join(', ') || 'none — great match'}.`;
+  }
+
+  // "what is X" / "what's X" / "define X" / "explain X" / "meaning of X"
+  const defMatch = msg.match(/^(?:what\s+is|what's|whats|define|explain|meaning of)\s+(.+)$/i);
+  if(defMatch){
+    const answer = lookupGlossary(defMatch[1]);
+    if(answer) return answer;
+    return `I don't have a built-in definition for "${defMatch[1].trim()}" yet — here's a quick search: https://www.google.com/search?q=${encodeURIComponent(defMatch[1].trim())}`;
+  }
+
+  const mentionedSkill = ALL_SKILLS.find(s => msg.includes(s.toLowerCase()));
+  if(mentionedSkill){
+    const links = searchLinks(mentionedSkill);
+    return `For "${mentionedSkill}" — try Google: ${links.google}\nor YouTube: ${links.youtube}`;
+  }
+  return "I can help with your target role, skill gaps, resume insights, roadmap, or progress — try asking about one of those, or name a specific skill.";
+}
+
+async function sendChat(){
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if(!text) return;
+  const body = document.getElementById('chatBody');
+
+  body.insertAdjacentHTML('beforeend', `<div class="msg user">${escapeHtml(text)}</div>`);
+  input.value = '';
+  body.scrollTop = body.scrollHeight;
+
+  const thinkingId = 'thinking-' + Date.now();
+  body.insertAdjacentHTML('beforeend', `<div class="msg bot" id="${thinkingId}">Thinking…</div>`);
+  body.scrollTop = body.scrollHeight;
+
+  let reply = null;
+  const online = await checkAiBackend();
+  if(online){
+    try{
+      const context = {
+        role: state.role ? state.role.name : null,
+        requiredSkills: state.role ? state.role.skills : null,
+        extractedSkills: state.extractedSkills,
+        gap: state.gap,
+        planProgress: { total: state.plan.length, done: state.plan.filter(p=>p.done).length }
+      };
+      const res = await fetch(`${AI_BACKEND_URL}/api/chat`, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ message: text, context })
+      });
+      if(res.ok){
+        const data = await res.json();
+        if(data.reply) reply = data.reply;
+      }
+    }catch(err){
+      console.warn('AI chat failed, using local rule-based reply:', err);
+    }
+  }
+
+  if(!reply){
+    await new Promise(r=>setTimeout(r, 250));
+    reply = answerFor(text);
+  }
+  document.getElementById(thinkingId).textContent = reply;
+  body.scrollTop = body.scrollHeight;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+/* Init */
+renderStep();
+</script>
+</body>
+</html>
